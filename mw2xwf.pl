@@ -4,8 +4,17 @@
 
 use strict;
 use warnings;
+use Getopt::Std;
+sub usage();
 
-my $infile="$ARGV[0]";
+# switches followed by a : expect an argument
+my %opt=();
+getopts('hfi:o:', \%opt) or usage();
+#our($opt_i, $opt_h);
+usage () if ( $opt{h} or (scalar keys %opt) == 0 ) ;
+
+
+my $infile=$opt{i};
 open(my $fh, '<:encoding(UTF-8)', $infile)
   or die "Could not open file '$infile' $!";
 my $x=0;
@@ -50,3 +59,9 @@ while (my $row = <$fh>) {
 # brevity
 #  if ($x > 10) {die;}
 }
+
+sub usage() 
+    {
+    print "like this: \n\t\'\${0##*/}\' -i [infile] -o [outfile] [-f (fix)]\n";
+    exit 1;
+    }
