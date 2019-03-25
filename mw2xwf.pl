@@ -21,19 +21,16 @@ my $infile=$opt{i};
 open(my $fh, '<:encoding(UTF-8)', $infile)
   or die "Could not open file '$infile' $!";
 
-#my $outfile=STDOUT;
 my $outfile=*STDOUT;
-
 if ($opt{o}) {
-#    $opt{o}="/dev/stdout";
-#    }
-#    my $outfile=$opt{o};
     open($outfile, '>:encoding(UTF-8)', $opt{o}) 
         or die "Could not open file '$opt{o}': $!\n";
     }
-    else {
-        $opt{o} = "/dev/stdout";
-    }
+#    else {
+        #only setting here to give capOutput() something to use
+        #ToDo:  don't call capOutput if $opt{o} is null
+#        $opt{o} = "/dev/stdout";
+#    }
     
 my $x=0;
 my $chars=0;  #XWF has 100,000-char limit on search string block (see XWFLIM constant)
@@ -81,7 +78,7 @@ while (my $row = <$fh>) {
     warn "\t$orig_row\n\t$row\n";
   }
 #show results
-    if ( $chars + length($row) > XWFLIM - 1 ) {
+    if ( $chars + length($row) > XWFLIM - 1 and $opt{o}) {
         #save off current outfile, copy, & reopen fresh
         capOutput($outFiCount++,length($row));
         $chars=0;
