@@ -31,6 +31,15 @@ if ($opt{o}) {
         #ToDo:  don't call capOutput if $opt{o} is null
 #        $opt{o} = "/dev/stdout";
 #    }
+#ToDo:  build block for creating logfile, send STDERR there
+my $logfile=*STDERR;
+if ($opt{l}) {
+    open($logfile, '>:encoding(UTF-8)', $opt{l}) 
+        or die "Could not open file '$opt{l}': $!\n";
+    }
+*STDERR=$logfile;
+    
+#ToDo:  add switch to create string-style search terms (dump specials into separate file)
     
 my $x=0;
 my $chars=0;  #XWF has 100,000-char limit on search string block (see XWFLIM constant)
@@ -90,6 +99,7 @@ while (my $row = <$fh>) {
 
 sub usage() {
     print "like this: \n\t\'\${0##*/}\' -i [infile] -o [outfile] [-l [logfile]]\n";
+    print "\nThis adjusts RegEx (as used in mwscan, possibly POSIX-compliant) into XWF-compatible RegEx/grep strings.  Because XWF has a limit of ".XWFLIM." characters for any set of simultaneous-search strings, if the output file reaches that limit, multiple output files are created by appending a digit (zero-indexed, of course) to the output file name.  Each will need to be run as a separate simultaneous search.\n";
     exit 1;
     }
 
