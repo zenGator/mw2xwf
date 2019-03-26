@@ -98,7 +98,8 @@ while (my $row = <$fh>) {
 }
 
 sub usage() {
-    print "like this: \n\t\'\${0##*/}\' -i [infile] -o [outfile] [-l [logfile]]\n";
+    my $commandname=$0=~ s/^.*\///r;
+    print "like this: \n\t".$commandname." -i [infile] -o [outfile] [-l [logfile]]\n";
     print "\nThis adjusts RegEx (as used in mwscan, possibly POSIX-compliant) into XWF-compatible RegEx/grep strings.  Because XWF has a limit of ".XWFLIM." characters for any set of simultaneous-search strings, if the output file reaches that limit, multiple output files are created by appending a digit (zero-indexed, of course) to the output file name.  Each will need to be run as a separate simultaneous search.\n";
     exit 1;
     }
