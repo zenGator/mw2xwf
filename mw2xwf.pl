@@ -11,19 +11,26 @@ sub usage;
 sub capOutput;
 
 # switches followed by a : expect an argument
+my $commandname=$0=~ s/^.*\///r;
 my %opt=();
-getopts('hi:l:o:', \%opt) or usage();
+getopts('hi:l:o:s', \%opt) or usage();
 #our($opt_i, $opt_h);
-usage () if ( $opt{h} or (scalar keys %opt) == 0 ) ;
+my $refile=$opt{o}.".RE";
+my $reFH;
 
+usage () if ( $opt{h} or (scalar keys %opt) == 0 ) ;
+if ( $opt{s} and ! $opt{o}) {
+    print "ERROR ($commandname):  -o required when using -s.\n\n";
+    usage();
+    }
 
 my $infile=$opt{i};
 open(my $fh, '<:encoding(UTF-8)', $infile)
   or die "Could not open file '$infile' $!";
 
-my $outfile=*STDOUT;
+my $outFH=*STDOUT;
 if ($opt{o}) {
-    open($outfile, '>:encoding(UTF-8)', $opt{o}) 
+    open($outFH, '>:encoding(UTF-8)', $opt{o}) 
         or die "Could not open file '$opt{o}': $!\n";
     }
 #    else {
@@ -38,16 +45,25 @@ if ($opt{l}) {
         or die "Could not open file '$opt{l}': $!\n";
     }
 *STDERR=$logfile;
-    
+
+if ($opt{s}) {
+    open ($reFH, '>:encoding(UTF-8)', $refile) 
+        or die "Could not open file '$refile': $!\n";
+    }
+
 #ToDo:  add switch to create string-style search terms (dump specials into separate file)
     
 my $x=0;
 my $chars=0;  #XWF has 100,000-char limit on search string block (see XWFLIM constant)
+my $rechars=0;
 my $outFiCount=0;
+my $reFiCount=0;
+my $regEx;
 
 while (my $row = <$fh>) {  
     #get a line
     $x++;
+    $regEx=0;
     chomp $row;
     my $orig_row=$row;
 
@@ -87,20 +103,33 @@ while (my $row = <$fh>) {
     warn "\t$orig_row\n\t$row\n";
   }
 #show results
-    if ( $chars + length($row) > XWFLIM - 1 and $opt{o}) {
+    if ( $row =~ /[^\\][{\[\(.*?+]/){
+        $regEx=1;
+        if ( $rechars + length($row) > XWFLIM - 1 ) {
         #save off current outfile, copy, & reopen fresh
-        capOutput($outFiCount++,length($row));
-        $chars=0;
+            capOutput($reFiCount++,length($row),$refile, $reFH);
+            $chars=0;
+            }
+        $rechars+=length($row)+1;
+        printf $reFH "%s\n", $row;
         }
-        
-    $chars+=length($row)+1;
-    printf $outfile "%s\n", $row;
+    else {
+    #ToDo:  test for opt{s}, and if so, strip "\" from $row (but not "\\"
+        if ( $chars + length($row) > XWFLIM - 1 and $opt{o}) {
+        #save off current outfile, copy, & reopen fresh
+            capOutput($outFiCount++,length($row),$opt{o}, $outFH);
+            $chars=0;
+            }
+        $chars+=length($row)+1;
+        printf $outFH "%s\n", $row;
+        }
+    
 }
 
 sub usage() {
-    my $commandname=$0=~ s/^.*\///r;
-    print "like this: \n\t".$commandname." -i [infile] -o [outfile] [-l [logfile]]\n";
+    print "like this: \n\t".$commandname." -i [infile] -o [outfile] [-l [logfile]] [-s]\n";
     print "\nThis adjusts RegEx (as used in mwscan, possibly POSIX-compliant) into XWF-compatible RegEx/grep strings.  Because XWF has a limit of ".XWFLIM." characters for any set of simultaneous-search strings, if the output file reaches that limit, multiple output files are created by appending a digit (zero-indexed, of course) to the output file name.  Each will need to be run as a separate simultaneous search.\n";
+    print "\nThe -s switch will [s]plit the output into two [sets of] files:  one that works as simple string search terms and another that contains RegEx terms (requiring the 'GREP syntax' option be selected).  You must identify an output file if using -s.\n";
     exit 1;
     }
 
@@ -108,8 +137,15 @@ sub capOutput {
     # XWF can only ingest XWFLIM chars for simul-search
     my $count=shift;
     my $len=shift;
-    printf STDERR "XWF limit reached, saving outfile segment as: %s\n",$opt{o}."_".$count;
-    close $outfile;
-    move($opt{o},$opt{o}."_".$count) or die "Couldn't rename '$opt{o}': $!\n";
-    open($outfile, '>:encoding(UTF-8)', $opt{o}) or die "Could not open file '$opt{o}' $!";
+    my $file=shift;
+    my $FH=shift;
+    printf STDERR "XWF limit reached, saving output file segment as: %s\n",$file."_".$count;
+    close $FH;
+    move($file,$file."_".$count) or die "Couldn't rename '$file': $!\n";
+    if ($regEx){
+        open($FH, '>:encoding(UTF-8)', $file) or die "Could not open file '$file' $!";
+        }
+    else {
+        open($FH, '>:encoding(UTF-8)', $file) or die "Could not open file '$file' $!";
+        }
     }
