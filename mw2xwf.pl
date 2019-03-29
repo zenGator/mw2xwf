@@ -103,7 +103,7 @@ while (my $row = <$fh>) {
     warn "\t$orig_row\n\t$row\n";
   }
 #show results
-    if ( $row =~ /[^\\][{\[\(.*?+]/){
+    if ( $opt{s} && $row =~ /[^\\][{\[\(.*?+]/){
         $regEx=1;
         if ( $rechars + length($row) > XWFLIM - 1 ) {
         #save off current outfile, copy, & reopen fresh
@@ -114,7 +114,13 @@ while (my $row = <$fh>) {
         printf $reFH "%s\n", $row;
         }
     else {
-    #ToDo:  test for opt{s}, and if so, strip "\" from $row (but not "\\"
+    #ToDo:  test for opt{s}, and if so, strip "\" from $row (but not "\\")
+        #add'l transform to make a pure-string search term
+        if ( $opt{s}) {
+            $row =~ s/\\\\/\x1A/g;
+            $row =~ s/\\//g;
+            $row =~ s/\x1A/\\/g;
+            }
         if ( $chars + length($row) > XWFLIM - 1 and $opt{o}) {
         #save off current outfile, copy, & reopen fresh
             capOutput($outFiCount++,length($row),$opt{o}, $outFH);
