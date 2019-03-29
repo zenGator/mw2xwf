@@ -18,6 +18,8 @@ getopts('hi:l:o:s', \%opt) or usage();
 my $refile=$opt{o}.".RE";
 my $reFH;
 
+#ToDo:  allow saving RE lines alone (i.e., don't transform from grep form)
+
 usage () if ( $opt{h} or (scalar keys %opt) == 0 ) ;
 if ( $opt{s} and ! $opt{o}) {
     print "ERROR ($commandname):  -o required when using -s.\n\n";
@@ -103,7 +105,7 @@ while (my $row = <$fh>) {
     warn "\t$orig_row\n\t$row\n";
   }
 #show results
-    if ( $opt{s} && $row =~ /[^\\][{\[\(.*?+]/){
+    if ( $opt{s} && $row =~ /[^\\][]{\(.*?+[]/){
         $regEx=1;
         if ( $rechars + length($row) > XWFLIM - 1 ) {
         #save off current outfile, copy, & reopen fresh
@@ -114,7 +116,6 @@ while (my $row = <$fh>) {
         printf $reFH "%s\n", $row;
         }
     else {
-    #ToDo:  test for opt{s}, and if so, strip "\" from $row (but not "\\")
         #add'l transform to make a pure-string search term
         if ( $opt{s}) {
             $row =~ s/\\\\/\x1A/g;
