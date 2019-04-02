@@ -15,7 +15,7 @@ my $commandname=$0=~ s/^.*\///r;
 my %opt=();
 getopts('hi:l:o:s', \%opt) or usage();
 #our($opt_i, $opt_h);
-my $refile=$opt{o}.".RE";
+my $refile=$opt{o}.".RE" if $opt{s};
 my $reFH;
 
 #ToDo:  allow saving RE lines alone (i.e., don't transform from grep form)
@@ -35,12 +35,7 @@ if ($opt{o}) {
     open($outFH, '>:encoding(UTF-8)', $opt{o}) 
         or die "Could not open file '$opt{o}': $!\n";
     }
-#    else {
-        #only setting here to give capOutput() something to use
-        #ToDo:  don't call capOutput if $opt{o} is null
-#        $opt{o} = "/dev/stdout";
-#    }
-#ToDo:  build block for creating logfile, send STDERR there
+
 my $logfile=*STDERR;
 if ($opt{l}) {
     open($logfile, '>:encoding(UTF-8)', $opt{l}) 
@@ -53,7 +48,6 @@ if ($opt{s}) {
         or die "Could not open file '$refile': $!\n";
     }
 
-#ToDo:  add switch to create string-style search terms (dump specials into separate file)
     
 my $x=0;
 my $chars=0;  #XWF has 100,000-char limit on search string block (see XWFLIM constant)
@@ -87,10 +81,22 @@ while (my $row = <$fh>) {
     $row =~ s/([^\\]\[[^]]*)0-9([^\]]*\])/$1#$2/g;
     $row =~ s/([^\\]\{)(,[^}]*\})/${1}0$2/g;
     $row =~ s/,\}/,9\}/g;
-    #this pattern shouldn't exist, but in mwscan version c. 2019.03.25, there is one example:
+    #the next patterns:
+        # {[not number]
+        # [not number]}
+    #   shouldn't exist, but in mwscan version c. 2019.03.25, there is one example:
     # var ....={..:function\(x,y\){return x!==y;}
-    $row =~ s/([^\\])(\{[^#])/$1\\$2/g;  #NB:  use "#" here as the 0-9 replacement is made above
-    $row =~ s/([^#])\}/$1\\\}/g;
+    $row =~ s/([^\\])(\{[^0-9])/$1\\$2/g;
+    $row =~ s/([^\\0-9])\}/$1\\}/g;
+    #if ($row =~ /\\\{/ ) {
+     #   warn "curly brace on line $x: recommend manual review\n";
+      #  warn "\toriginal:\t$orig_row\n\tfixed (so far):\t\t$row\n";
+       # }
+    # let's flag this possibility:
+    if ($row =~ /[^\\]\{[^}]*[^},0-9]+[^}]*\}/ ) {
+        warn "possible bad usage of curly braces for RegEx on line $x: recommend manual review\n";
+        warn "\toriginal:\t$orig_row\n\tfixed (so far):\t\t$row\n";
+        }
   
 
 #  fix double-digits inside brackets
@@ -105,7 +111,7 @@ while (my $row = <$fh>) {
     warn "\t$orig_row\n\t$row\n";
   }
 #show results
-    if ( $opt{s} && $row =~ /[^\\][]{\(.*?+[]/){
+    if ( $opt{s} && $row =~ /[^\\][]\{\}\(.*?+[]/){
         $regEx=1;
         if ( $rechars + length($row) > XWFLIM - 1 ) {
         #save off current outfile, copy, & reopen fresh
