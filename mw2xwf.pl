@@ -96,6 +96,7 @@ while (my $row = <$fh>) {
       #  warn "\toriginal:\t$orig_row\n\tfixed (so far):\t\t$row\n";
        # }
     # let's flag this possibility:
+    #next works, 2019.04.02 1620
     if ($row =~ /[^\\]\{[^}]*[^},0-9]+[^}]*\}/ ) {
         warn "possible bad usage of curly braces for RegEx on line $x: recommend manual review\n";
         warn "\toriginal:\t$orig_row\n\tfixed (so far):\t\t$row\n";
@@ -116,13 +117,13 @@ while (my $row = <$fh>) {
 #show results
     if ( $opt{s} && $row =~ /[^\\][]\{\}\(.*?+[]/){
         $regEx=1;
-        if ( $rechars + length($row) > XWFLIM - 1 ) {
+        if ( $rechars + length($row) > (XWFLIM -  1 ) )) {
         #save off current outfile, copy, & reopen fresh
             capOutput($reFiCount++,length($row),$refile, $reFH);
             $chars=0;
             }
-        $rechars+=length($row)+1;
-        printf $reFH "%s\n", $row;
+        $rechars+=length($row)+2; # the 2 is for the \r\n
+        printf $reFH "%s\r\n", $row;
         }
     else {
         #add'l transform to make a pure-string search term
@@ -136,8 +137,8 @@ while (my $row = <$fh>) {
             capOutput($outFiCount++,length($row),$opt{o}, $outFH);
             $chars=0;
             }
-        $chars+=length($row)+1;
-        printf $outFH "%s\n", $row;
+        $chars+=length($row)+2; # the 2 is for the \r\n
+        printf $outFH "%s\r\n", $row;
         }
     
 }
