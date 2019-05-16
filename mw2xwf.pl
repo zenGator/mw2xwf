@@ -2,6 +2,9 @@
 # https://github.com/zenGator/mw2xwf
 # zG:20190321
 
+# Get current signatures:  with curl -LO mwscan.s3.amazonaws.com/mwscan.txt
+
+
 use strict;
 use warnings;
 use Getopt::Std;
