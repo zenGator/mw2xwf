@@ -2,7 +2,8 @@
 # https://github.com/zenGator/mw2xwf
 # zG:20190321
 
-# Get current signatures:  with curl -LO mwscan.s3.amazonaws.com/mwscan.txt
+# Get current signatures with:
+#   curl -LO mwscan.s3.amazonaws.com/mwscan.txt
 
 
 use strict;
@@ -115,6 +116,7 @@ while (my $row = <$fh>) {
     warn "\t$orig_row\n\t$row\n";
   }
 #show results
+#ToDo:  set $regEx if necessary, then split out the complex regex from the fixed expressions regardless of opt{s}
     if ( $opt{s} && $row =~ /[^\\][]\{\}\(.*?+[]/){
         $regEx=1;
         if ( $rechars + length($row) > (XWFLIM -  1 ) )) {
@@ -146,7 +148,7 @@ while (my $row = <$fh>) {
 sub usage() {
     print "like this: \n\t".$commandname." -i [infile] -o [outfile] [-l [logfile]] [-s]\n";
     print "\nThis adjusts RegEx (as used in mwscan, possibly POSIX-compliant) into XWF-compatible RegEx/grep strings.  Because XWF has a limit of ".XWFLIM." characters for any set of simultaneous-search strings, if the output file reaches that limit, multiple output files are created by appending a digit (zero-indexed, of course) to the output file name.  Each will need to be run as a separate simultaneous search.\n";
-    print "\nThe -s switch will [s]plit the output into two [sets of] files:  one that works as simple string search terms and another that contains RegEx terms (requiring the 'GREP syntax' option be selected).  You must identify an output file if using -s.\n";
+    print "\nThe -s switch will [s]plit the output into two [sets of] files:  one that works as simple string search terms and another that contains RegEx terms which will require the 'GREP syntax' option be selected in XWF.  You must identify an output file if using -s.\n";
     exit 1;
     }
 
